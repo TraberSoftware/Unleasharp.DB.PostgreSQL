@@ -20,7 +20,7 @@ dotnet add package Unleasharp.DB.PostgreSQL
 
 ### PackageReference (Manual)
 ```xml
-<PackageReference Include="Unleasharp.DB.PostgreSQL" Version="1.1.0" />
+<PackageReference Include="Unleasharp.DB.PostgreSQL" Version="1.2.0" />
 ```
 
 ## 🎯 Features
@@ -36,23 +36,32 @@ The `ConnectorManager` handles database connections. You can initialize it using
 
 ### Using Connection String
 ```csharp
-ConnectorManager DBConnector = new ConnectorManager("Data Source=unleasharp.db;Version=3;");
+ConnectorManager DBConnector = new ConnectorManager("Host=localhost;Port=5432;Database=unleasharp;Username=unleasharp;Password=unleasharp;Include Error Detail=true");
 ```
 
 ### Using Fluent Configuration
 ```csharp
-ConnectorManager DBConnector = new ConnectorManager()
+ConnectorManager dbConnector = new ConnectorManager("Host=localhost;Port=5432;Database=unleasharp;Username=unleasharp;Password=unleasharp;Include Error Detail=true")
     .WithAutomaticConnectionRenewal(true)
     .WithAutomaticConnectionRenewalInterval(TimeSpan.FromHours(1))
-    .Configure(config => {
-        config.ConnectionString = "Data Source=unleasharp.db;Version=3;";
-    });
+    .WithDataSourceBuilderSetup(sourceBuilder => {
+        sourceBuilder.MapEnum<EnumExample>("enumexample");
+    })
+    .WithOnQueryExceptionAction(ex => Console.WriteLine(ex.Message))
+;
 ```
 
-### Using PostgreSQLConnectionStringBuilder
+### Using NpgsqlConnectionStringBuilder
 ```csharp
-ConnectorManager DBConnector = new ConnectorManager(
-    new PostgreSQLConnectionStringBuilder("Data Source=unleasharp.db;Version=3;")
+ConnectorManager dbConnector = new ConnectorManager(
+    new NpgsqlConnectionStringBuilder("Host=localhost;Port=5432;Database=unleasharp;Username=unleasharp;Password=unleasharp;")
+);
+```
+
+### Using NpgsqlDataSourceBuilder
+```csharp
+ConnectorManager dbConnector = new ConnectorManager(
+    new NpgsqlDataSourceBuilder("Host=localhost;Port=5432;Database=unleasharp;Username=unleasharp;Password=unleasharp;Include Error Detail=true")
 );
 ```
 
@@ -67,44 +76,67 @@ using Unleasharp.DB.Base.SchemaDefinition;
 namespace Unleasharp.DB.PostgreSQL.Sample;
 
 [Table("example_table")]
-public class ExampleTable 
-{
-    [Column("id", "integer", Unsigned = true, PrimaryKey = true, AutoIncrement = true, NotNull = true)]
-    public long? Id         { get; set; }
+[PrimaryKey("id")]
+[UniqueKey("id", "id", "_enum")]
+public class ExampleTable {
+    [Column("id",          ColumnDataType.UInt64, Unsigned = true, PrimaryKey = true, AutoIncrement = true, NotNull = true)]
+    public long?       Id              { get; set; }
 
-    [Column("_mediumtext", "text")]
-    public string MediumText { get; set; }
+    [Column("_mediumtext", ColumnDataType.Text)]
+    public string      MediumText      { get; set; }
 
-    [Column("_longtext", "text")]
-    public string Longtext  { get; set; }
+    [Column("_longtext",   ColumnDataType.Text)]
+    public string      Longtext        { get; set; }
 
-    [Column("_json", "text")]
-    public string Json      { get; set; }
+    [Column("_json",       ColumnDataType.Json)]
+    public string      Json            { get; set; }
 
-    [Column("_longblob", "blob")]
-    public byte[] CustomFieldName { get; set; }
+    [Column("_longblob",   ColumnDataType.Binary)]
+    public byte[]      CustomFieldName { get; set; }
 
-    [Column("_enum", "text")]
-    public EnumExample? Enum { get; set; }
+    [Column("_enum",       ColumnDataType.Enum)]
+    public CustomEnum? Enum            { get; set; }
 
-    [Column("_varchar", "varchar", Length = 255)]
-    public string Varchar { get; set; }
+    [Column("_varchar",    "varchar", Length = 255)]
+    public string      Varchar         { get; set; }
 }
 
-public enum EnumExample 
-{
-    NONE,
+public enum EnumExample {
+    [PgName("Y")]
     Y,
-    [Description("NEGATIVE")]
+    [PgName("NEGATIVE")]
     N
 }
+```
+
+### Create Enum Types
+```csharp
+ConnectorManager dbConnector = new ConnectorManager();
+dbConnector.QueryBuilder().Build(query => query.CreateEnumType<EnumExample>()).Execute().DBQuery.Render();
+```
+
+### Enum Types Mapping
+
+#### Using Fluent Configuration
+```csharp
+ConnectorManager dbConnector = new ConnectorManager()
+    .WithDataSourceBuilderSetup(sourceBuilder => {
+        sourceBuilder.MapEnum<EnumExample>("enumexample");
+    })
+;
+```
+
+#### Using ConnectorManager.DataSourceBuilder
+```csharp
+ConnectorManager dbConnector = new ConnectorManager();
+dbConnector.QueryBuilder().Build(query => query.CreateEnumType<EnumExample>()).Execute().DBQuery.Render();
+dbConnector.DataSourceBuilder.MapEnum<EnumExample>("enumexample");
 ```
 
 ### Sample Program
 
 ```csharp
-using System;
-using System.Collections.Generic;
+using Npgsql;
 using Unleasharp.DB.PostgreSQL;
 using Unleasharp.DB.Base.QueryBuilding;
 
@@ -115,42 +147,51 @@ internal class Program
     static void Main(string[] args) 
     {
         // Initialize database connection
-        ConnectorManager DBConnector = new ConnectorManager("Data Source=unleasharp.db;Version=3;");
+        ConnectorManager dbConnector = new ConnectorManager(new NpgsqlDataSourceBuilder("Host=192.168.1.8;Port=5432;Database=unleasharp;Username=unleasharp;Password=unleasharp;Include Error Detail=true"))
+            .WithAutomaticConnectionRenewal(true)
+            .WithAutomaticConnectionRenewalInterval(TimeSpan.FromHours(1))
+            .WithDataSourceBuilderSetup(sourceBuilder => {
+                // Map Enum types
+                sourceBuilder.MapEnum<EnumExample>("enumexample");
+            })
+            .WithOnQueryExceptionAction(ex => Console.WriteLine(ex.Message))
+        ;
         
-        // Create table
-        DBConnector.QueryBuilder().Build(Query => Query.Create<ExampleTable>()).Execute();
-        
+        // Create Enum types if needed
+        dbConnector.QueryBuilder().Build(query => query.CreateEnumType<EnumExample>()).Execute();
+        // Create table if needed
+        dbConnector.QueryBuilder().Build(Query => Query.Create<ExampleTable>       ()).Execute();
+
         // Insert data
-        DBConnector.QueryBuilder().Build(Query => { Query
+        dbConnector.QueryBuilder().Build(Query => { Query
             .From<ExampleTable>()
             .Value(new ExampleTable {
                 MediumText = "Medium text example value",
-                _enum      = EnumExample.N
+                Enum       = EnumExample.N
             })
             .Values(new List<ExampleTable> {
                 new ExampleTable {
-                    _json           = @"{""sample_json_field"": ""sample_json_value""}",
-                    _enum           = EnumExample.Y,
+                    Json            = @"{""sample_json_field"": ""sample_json_value""}",
+                    Enum            = EnumExample.Y,
                     CustomFieldName = new byte[8] { 81,47,15,21,12,16,23,39 }
                 },
                 new ExampleTable {
-                    _longtext = "Long text example value",
-                    ID        = 999 // RandomID placeholder
+                    Longtext = "Long text example value",
                 }
             })
             .Insert();
         }).Execute();
         
         // Select single row
-        ExampleTable Row = DBConnector.QueryBuilder().Build(Query => Query
+        ExampleTable Row = dbConnector.QueryBuilder().Build(Query => Query
             .From("example_table")
             .OrderBy("id", OrderDirection.ASC)
             .Limit(1)
             .Select()
         ).FirstOrDefault<ExampleTable>();
         
-        // Select multiple rows with different class naming
-        List<example_table> Rows = DBConnector.QueryBuilder().Build(Query => Query
+        // Select multiple rows, to unmapped table class
+        List<example_table> Rows = dbConnector.QueryBuilder().Build(Query => Query
             .From("example_table")
             .OrderBy("id", OrderDirection.DESC)
             .Select()

@@ -14,7 +14,7 @@ public class ConnectorManager :
     ConnectorManager<ConnectorManager, Connector, NpgsqlConnectionStringBuilder, NpgsqlConnection, QueryBuilder, Query>
 {
 	public NpgsqlDataSource        DataSource        { get; private set; }
-	public NpgsqlDataSourceBuilder DataSourceBuilder { get; private set; }
+	public NpgsqlDataSourceBuilder DataSourceBuilder { get; private set; } = new NpgsqlDataSourceBuilder();
 
 	#region Default constructors
 	/// <inheritdoc />

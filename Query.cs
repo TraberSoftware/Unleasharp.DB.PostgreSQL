@@ -9,6 +9,7 @@ using Unleasharp.DB.Base;
 using Unleasharp.DB.Base.ExtensionMethods;
 using Unleasharp.DB.Base.QueryBuilding;
 using Unleasharp.DB.Base.SchemaDefinition;
+using Unleasharp.DB.PostgreSQL.ExtensionMethods;
 using Unleasharp.ExtensionMethods;
 
 namespace Unleasharp.DB.PostgreSQL;
@@ -117,7 +118,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
 
         List<string> enumValues = new List<string>();
 		foreach (Enum enumValue in Enum.GetValues(enumType)) {
-			enumValues.Add(this.__RenderWhereValue(enumValue.GetDescription(), true));
+			enumValues.Add(this.__RenderWhereValue(enumValue.GetPgName(), true));
 		}
 
 		this.QueryPreparedString = $"CREATE TYPE {Query.FieldDelimiter}{enumType.Name.ToLowerInvariant()}{Query.FieldDelimiter} AS ENUM({string.Join(',', enumValues)})";
