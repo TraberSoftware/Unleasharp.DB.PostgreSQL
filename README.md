@@ -79,26 +79,26 @@ namespace Unleasharp.DB.PostgreSQL.Sample;
 [PrimaryKey("id")]
 [UniqueKey("id", "id", "_enum")]
 public class ExampleTable {
-    [Column("id",          ColumnDataType.UInt64, Unsigned = true, PrimaryKey = true, AutoIncrement = true, NotNull = true)]
-    public long?       Id              { get; set; }
+	[Column("id", ColumnDataType.UInt64, Unsigned = true, PrimaryKey = true, AutoIncrement = true, NotNull = true)]
+	public long? Id { get; set; }
 
-    [Column("_mediumtext", ColumnDataType.Text)]
-    public string      MediumText      { get; set; }
+	[Column("_mediumtext", ColumnDataType.Text)]
+	public string MediumText  { get; set; }
 
-    [Column("_longtext",   ColumnDataType.Text)]
-    public string      Longtext        { get; set; }
+	[Column("_longtext", ColumnDataType.Text)]
+	public string Longtext { get; set; }
 
-    [Column("_json",       ColumnDataType.Json)]
-    public string      Json            { get; set; }
+	[Column("_json", ColumnDataType.Json)]
+	public string Json { get; set; }
 
-    [Column("_longblob",   ColumnDataType.Binary)]
-    public byte[]      CustomFieldName { get; set; }
+	[Column("_longblob", ColumnDataType.Binary)]
+	public byte[] CustomFieldName { get; set; }
 
-    [Column("_enum",       ColumnDataType.Enum)]
-    public CustomEnum? Enum            { get; set; }
+	[Column("_enum", ColumnDataType.Enum)]
+	public EnumExample? Enum { get; set; }
 
-    [Column("_varchar",    "varchar", Length = 255)]
-    public string      Varchar         { get; set; }
+	[Column("_varchar", "varchar", Length = 255)]
+	public string Varchar { get; set; }
 }
 
 public enum EnumExample {
@@ -147,7 +147,7 @@ internal class Program
     static void Main(string[] args) 
     {
         // Initialize database connection
-        ConnectorManager dbConnector = new ConnectorManager(new NpgsqlDataSourceBuilder("Host=192.168.1.8;Port=5432;Database=unleasharp;Username=unleasharp;Password=unleasharp;Include Error Detail=true"))
+        ConnectorManager dbConnector = new ConnectorManager(new NpgsqlDataSourceBuilder("Host=localhost;Port=5432;Database=unleasharp;Username=unleasharp;Password=unleasharp;Include Error Detail=true"))
             .WithAutomaticConnectionRenewal(true)
             .WithAutomaticConnectionRenewalInterval(TimeSpan.FromHours(1))
             .WithDataSourceBuilderSetup(sourceBuilder => {
@@ -200,7 +200,7 @@ internal class Program
 }
 ```
 
-### Sample Query Rendering
+### Sample Query Rendering (WIP)
 
 ```csharp
 // Complex query demonstration with subqueries
