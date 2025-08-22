@@ -32,7 +32,7 @@ dotnet add package Unleasharp.DB.PostgreSQL
 
 ## 🚀 Connection Initialization
 
-The `ConnectorManager` handles database connections. You can initialize it using a connection string or `PostgreSQLConnectionStringBuilder`.
+The `ConnectorManager` handles database connections. You can initialize it using a connection string, `NpgsqlConnectionStringBuilder` or `NpgsqlDataSourceBuilder`.
 
 ### Using Connection String
 ```csharp
