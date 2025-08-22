@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AssemblyVersion>1.1.1.0</AssemblyVersion>
+    <FileVersion>1.1.1</FileVersion>
+    <VersionPrefix>1.1.1</VersionPrefix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Traber</Authors>
+    <Description>A multi-purpose database query building library. PostgreSQL implementation.</Description>
+
+    <PackageProjectUrl>https://github.com/TraberSoftware/Unleasharp.DB.PostgreSQL</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath=""/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="9.0.3" />
+    <PackageReference Include="Unleasharp.DB.Base" Version="1.2.0" />
+  </ItemGroup>
+</Project>
