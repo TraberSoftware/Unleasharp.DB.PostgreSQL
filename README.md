@@ -1,5 +1,7 @@
 ﻿# 🐘 Unleasharp.DB.PostgreSQL
 
+[![NuGet version (Unleasharp.DB.PostgreSQL)](https://img.shields.io/nuget/v/Unleasharp.DB.PostgreSQL.svg?style=flat-square)](https://www.nuget.org/packages/Unleasharp.DB.PostgreSQL/)
+
 [![Unleasharp.DB.PostgreSQL](https://socialify.git.ci/TraberSoftware/Unleasharp.DB.PostgreSQL/image?description=1&font=Inter&logo=https%3A%2F%2Fraw.githubusercontent.com%2FTraberSoftware%2FUnleasharp%2Frefs%2Fheads%2Fmain%2Fassets%2Flogo-small.png&name=1&owner=1&pattern=Circuit+Board&theme=Light)](https://github.com/TraberSoftware/Unleasharp.DB.PostgreSQL)
 
 PostgreSQL implementation of Unleasharp.DB.Base. This repository provides a PostgreSQL-specific implementation that leverages the base abstraction layer for common database operations.
