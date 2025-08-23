@@ -23,17 +23,17 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
 
     #region Public query building methods overrides
     public override Query Value<T>(T row, bool skipNullValues = true) where T : class {
-		Type rowType = row.GetType();
+        Type rowType = row.GetType();
 
-		if (rowType.IsClass) {
+        if (rowType.IsClass) {
             List<NpgsqlParameter> rowValues = new List<NpgsqlParameter>();
 
             foreach (FieldInfo field in rowType.GetFields()) {
                 rowValues.Add(this.__GetMemberInfoParameter(row, field));
             }
             foreach (PropertyInfo property in rowType.GetProperties()) {
-				rowValues.Add(this.__GetMemberInfoParameter(row, property));
-			}
+                rowValues.Add(this.__GetMemberInfoParameter(row, property));
+            }
 
             return this.Value(
                 rowValues
@@ -43,110 +43,118 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
                         rowValue => rowValue as dynamic
                     )
             );
-		}
+        }
 
-		return this.Value(row.ToDynamicDictionary());
+        return this.Value(row.ToDynamicDictionary());
     }
 
 
-	public virtual Query Values<T>(List<T> rows, bool skipNullValues = true) where T : class {
-		foreach (T row in rows) {
-			this.Value<T>(row, skipNullValues);
-		}
+    public virtual Query Values<T>(List<T> rows, bool skipNullValues = true) where T : class {
+        foreach (T row in rows) {
+            this.Value<T>(row, skipNullValues);
+        }
 
-		return (Query) this;
-	}
+        return (Query) this;
+    }
 
-	private NpgsqlParameter __GetMemberInfoParameter(object row, MemberInfo memberInfo) {
+    private NpgsqlParameter __GetMemberInfoParameter(object row, MemberInfo memberInfo) {
         string          classFieldName   = memberInfo.Name;
-		string          dbFieldName      = classFieldName;
+        string          dbFieldName      = classFieldName;
         Type            memberInfoType   = memberInfo.GetDataType();
-		Column?         column           = memberInfo.GetCustomAttribute<Column>();
+        Column?         column           = memberInfo.GetCustomAttribute<Column>();
         object?         value            = null;
         ColumnDataType? columnDataType   = null;
-		NpgsqlDbType?   dbColumnDataType = null;
+        NpgsqlDbType?   dbColumnDataType = null;
 
-		if (memberInfo is FieldInfo) {
-			value = ((FieldInfo)memberInfo   ).GetValue(row);
-		}
-		if (memberInfo is PropertyInfo) {
-			value = ((PropertyInfo)memberInfo).GetValue(row);
-		}
+        if (memberInfo is FieldInfo) {
+            value = ((FieldInfo)memberInfo   ).GetValue(row);
+        }
+        if (memberInfo is PropertyInfo) {
+            value = ((PropertyInfo)memberInfo).GetValue(row);
+        }
         if (value == null) {
             value = DBNull.Value;
         }
 
-		// Don't set null values to Primary Key columns
-		// HOWEVER, be careful when mixing null and not-null values of Primary Key columns in the same insert
-		if ((column != null && (column.PrimaryKey && column.NotNull)) && (value == null || value == DBNull.Value)) {
+        // Don't set null values to Primary Key columns
+        // HOWEVER, be careful when mixing null and not-null values of Primary Key columns in the same insert
+        if ((column != null && (column.PrimaryKey && column.NotNull)) && (value == null || value == DBNull.Value)) {
             return null;
-		}
+        }
 
-		if (Nullable.GetUnderlyingType(memberInfoType) != null) {
-			memberInfoType = Nullable.GetUnderlyingType(memberInfoType);
-		}
+        if (Nullable.GetUnderlyingType(memberInfoType) != null) {
+            memberInfoType = Nullable.GetUnderlyingType(memberInfoType);
+        }
 
-		if (column != null) {
-			dbFieldName = column.Name;
+        if (column != null) {
+            dbFieldName = column.Name;
 
-			if (column.DataType != null) {
+            if (column.DataType != null) {
                 columnDataType = column.DataType;
             }
             else {
-				columnDataType = memberInfoType.GetColumnType();
-			}
+                columnDataType = memberInfoType.GetColumnType();
+            }
 
             dbColumnDataType = this.GetPostgreSQLDataType(columnDataType.Value) ?? dbColumnDataType;
-		}
+        }
 
         if (dbColumnDataType.HasValue && !memberInfoType.IsEnum) {
-			return new NpgsqlParameter {
+            return new NpgsqlParameter {
                 ParameterName = dbFieldName,
                 Value         = value,
                 NpgsqlDbType  = dbColumnDataType.Value,
             };
-		}
+        }
 
-		return new NpgsqlParameter(dbFieldName, value);
-	}
-	#endregion
+        return new NpgsqlParameter(dbFieldName, value);
+    }
+    #endregion
 
-	#region Query building
-	#region Query building - Create
-	public Query CreateEnumType(Type enumType) {
+    #region Query building
+    #region Query building - Create
+    public Query CreateEnumType(Type enumType) {
         this.SetQueryType(QueryType.CREATE);
 
         List<string> enumValues = new List<string>();
-		foreach (Enum enumValue in Enum.GetValues(enumType)) {
-			enumValues.Add(this.__RenderWhereValue(enumValue.GetPgName(), true));
-		}
+        foreach (Enum enumValue in Enum.GetValues(enumType)) {
+            enumValues.Add(this.__RenderWhereValue(enumValue.GetPgName(), true));
+        }
 
-		this.QueryPreparedString = $"CREATE TYPE {Query.FieldDelimiter}{enumType.Name.ToLowerInvariant()}{Query.FieldDelimiter} AS ENUM({string.Join(',', enumValues)})";
-		this.QueryRenderedString = QueryPreparedString;
+        this.QueryPreparedString = $"CREATE TYPE {Query.FieldDelimiter}{enumType.Name.ToLowerInvariant()}{Query.FieldDelimiter} AS ENUM({string.Join(',', enumValues)})";
+        this.QueryRenderedString = QueryPreparedString;
 
-		this.Untouch();
-		return this;
+        this.Untouch();
+        return this;
     }
 
-	public Query CreateEnumType<EnumType>() where EnumType : Enum {
+    public Query CreateEnumType<EnumType>() where EnumType : Enum {
         return this.CreateEnumType(typeof(EnumType));
-	}
-	#endregion
-	#endregion
+    }
+    #endregion
+    #endregion
 
-	#region Query rendering
-	#region Query fragment rendering
-	public override void _RenderPrepared() {
+    #region Query rendering
+    #region Query fragment rendering
+    public override void _RenderPrepared() {
         this._Render();
 
         string rendered = this.QueryPreparedString;
-        foreach (KeyValuePair<string, PreparedValue> preparedDataItem in this.QueryPreparedData) {
-            if (preparedDataItem.Value.Value == null) {
-                rendered = rendered.Replace(preparedDataItem.Key, "NULL");
+
+        foreach (string preparedDataItemKey in this.QueryPreparedData.Keys.Reverse()) {
+            PreparedValue preparedDataItemValue = this.QueryPreparedData[preparedDataItemKey];
+            object?       value                 = preparedDataItemValue.Value is NpgsqlParameter ? (((NpgsqlParameter)preparedDataItemValue.Value).Value) : preparedDataItemValue.Value;
+            bool          escape                = preparedDataItemValue.Value is NpgsqlParameter ? true : preparedDataItemValue.EscapeValue;
+            string        renderedValue         = "NULL";
+
+            if (value != null && value != DBNull.Value) {
+                renderedValue = true switch {
+                    true when value is Enum   => this.__RenderWhereValue(((Enum)value).GetPgName(), escape),
+                    true when value is byte[] => this.__RenderWhereValue($"0x{Convert.ToHexString((byte[])value)}", escape),
+                                            _ => this.__RenderWhereValue(value, escape)
+                };
             }
-            else {
-                rendered = rendered.Replace(preparedDataItem.Key, this.__RenderWhereValue(preparedDataItem.Value.Value, preparedDataItem.Value.EscapeValue));
-            }
+            rendered = rendered.Replace(preparedDataItemKey, renderedValue);
         }
 
         this.QueryRenderedString = rendered;
@@ -389,12 +397,12 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
             if (this.QueryLimit.Count > 0) {
                 rendered.Add(this.QueryLimit.Count.ToString());
             }
-			if (this.QueryLimit.Offset >= 0) {
-				rendered.Add($" OFFSET {this.QueryLimit.Offset.ToString()}");
-			}
-		}
+            if (this.QueryLimit.Offset >= 0) {
+                rendered.Add($" OFFSET {this.QueryLimit.Offset.ToString()}");
+            }
+        }
 
-		return (rendered.Count > 0 ? "LIMIT " + string.Join(' ', rendered) : "");
+        return (rendered.Count > 0 ? "LIMIT " + string.Join(' ', rendered) : "");
     }
 
 
@@ -451,22 +459,22 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
                 // In order to get a valid query, insert the values in the same column order
                 foreach (string queryColumn in this.QueryColumns) {
                     if (queryValue.ContainsKey(queryColumn) && queryValue[queryColumn] != null) {
-						if (queryValue[queryColumn] != null && queryValue[queryColumn] is NpgsqlParameter) {
+                        if (queryValue[queryColumn] != null && queryValue[queryColumn] is NpgsqlParameter) {
                             string preparedQuerylabel = this.GetNextPreparedQueryValueLabel();
-							(queryValue[queryColumn] as NpgsqlParameter).ParameterName = preparedQuerylabel;
+                            (queryValue[queryColumn] as NpgsqlParameter).ParameterName = preparedQuerylabel;
 
-							toRender.Add(this.PrepareQueryValue(queryValue[queryColumn], false));
+                            toRender.Add(this.PrepareQueryValue(queryValue[queryColumn], false));
                             continue;
-						}
-					
+                        }
+                    
                         if (queryValue[queryColumn] != null && queryValue[queryColumn] is Enum) {
-							toRender.Add(this.PrepareQueryValue(queryValue[queryColumn], false));
-						}
-						else {
-							toRender.Add(this.PrepareQueryValue(queryValue[queryColumn], true));
-						}
-					}
-					else {
+                            toRender.Add(this.PrepareQueryValue(queryValue[queryColumn], false));
+                        }
+                        else {
+                            toRender.Add(this.PrepareQueryValue(queryValue[queryColumn], true));
+                        }
+                    }
+                    else {
                         toRender.Add("NULL");
                     }
                 }
@@ -521,20 +529,20 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         PropertyInfo[] tableProperties = tableType.GetProperties();
         FieldInfo   [] tableFields     = tableType.GetFields();
 
-		return tableProperties.Select(tableProperty => {
-			return this.__GetColumnDefinition(tableProperty, tableProperty.GetCustomAttribute<Column>());
-		}).Where(renderedColumn => renderedColumn != null);
-	}
+        return tableProperties.Select(tableProperty => {
+            return this.__GetColumnDefinition(tableProperty, tableProperty.GetCustomAttribute<Column>());
+        }).Where(renderedColumn => renderedColumn != null);
+    }
 
 
-	private IEnumerable<string?> __GetTableKeyDefinitions(Type tableType) {
+    private IEnumerable<string?> __GetTableKeyDefinitions(Type tableType) {
         List<string> definitions = new List<string>();
 
         foreach (UniqueKey uKey in tableType.GetCustomAttributes<UniqueKey>()) {
-	        definitions.Add(
-		        $"CONSTRAINT {Query.FieldDelimiter}uk_{uKey.Name}{Query.FieldDelimiter} UNIQUE " +
-		        $"({string.Join(", ", uKey.Columns.Select(column => $"{Query.FieldDelimiter}{column}{Query.FieldDelimiter}"))})"
-	        );
+            definitions.Add(
+                $"CONSTRAINT {Query.FieldDelimiter}uk_{uKey.Name}{Query.FieldDelimiter} UNIQUE " +
+                $"({string.Join(", ", uKey.Columns.Select(column => $"{Query.FieldDelimiter}{column}{Query.FieldDelimiter}"))})"
+            );
         }
         foreach (ForeignKey fKey in tableType.GetCustomAttributes<ForeignKey>()) {
             definitions.Add(
@@ -563,24 +571,24 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         string columnDataTypeString = tableColumn.DataTypeString ?? this.GetColumnDataTypeString(tableColumn.DataType);
         if (tableColumn.PrimaryKey) {
             columnDataTypeString = columnDataTypeString switch {
-				"SMALLINT" => "SMALLSERIAL",
-				"INTEGER"  =>      "SERIAL",
-				"BIGINT"   =>   "BIGSERIAL",
-			};
-		}
-		if (columnType.IsEnum) {
-			columnDataTypeString = $"{columnType.Name.ToLowerInvariant()}";
-		}
+                "SMALLINT" => "SMALLSERIAL",
+                "INTEGER"  =>      "SERIAL",
+                "BIGINT"   =>   "BIGSERIAL",
+            };
+        }
+        if (columnType.IsEnum) {
+            columnDataTypeString = $"{columnType.Name.ToLowerInvariant()}";
+        }
 
-		StringBuilder columnBuilder = new StringBuilder($"{Query.FieldDelimiter}{tableColumn.Name}{Query.FieldDelimiter} {columnDataTypeString}");
+        StringBuilder columnBuilder = new StringBuilder($"{Query.FieldDelimiter}{tableColumn.Name}{Query.FieldDelimiter} {columnDataTypeString}");
         if (tableColumn.Length > 0)
             columnBuilder.Append($" ({tableColumn.Length}{(tableColumn.Precision > 0 ? $",{tableColumn.Precision}" : "")})");
 
-		if (tableColumn.Unique)
-			columnBuilder.Append(" UNIQUE");
-		if (tableColumn.PrimaryKey)
-			columnBuilder.Append(" PRIMARY KEY");
-		if (tableColumn.NotNull && !tableColumn.PrimaryKey) 
+        if (tableColumn.Unique)
+            columnBuilder.Append(" UNIQUE");
+        if (tableColumn.PrimaryKey)
+            columnBuilder.Append(" PRIMARY KEY");
+        if (tableColumn.NotNull && !tableColumn.PrimaryKey) 
             columnBuilder.Append(" NOT NULL");
         if (tableColumn.Default != null)
             columnBuilder.Append($" DEFAULT {tableColumn.Default}");
@@ -609,18 +617,18 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
             }
         }
         if (value is Enum) {
-			return $"{ValueDelimiter}{((Enum)value).GetDescription()}{ValueDelimiter}";
-		}
+            return $"{ValueDelimiter}{((Enum)value).GetDescription()}{ValueDelimiter}";
+        }
 
-		return value.ToString();
+        return value.ToString();
     }
 
     public string GetColumnDataTypeString(ColumnDataType type) {
         return type switch {
             ColumnDataType.Boolean   => "BOOLEAN",
             ColumnDataType.Int16     => "SMALLINT",
-			ColumnDataType.Int       => "INTEGER",
-			ColumnDataType.Int32     => "INTEGER",
+            ColumnDataType.Int       => "INTEGER",
+            ColumnDataType.Int32     => "INTEGER",
             ColumnDataType.Int64     => "BIGINT",
             ColumnDataType.UInt16    => "SMALLINT",
             ColumnDataType.UInt32    => "INTEGER",
@@ -640,7 +648,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
             ColumnDataType.Binary    => "BYTEA",
             ColumnDataType.Guid      => "UUID",
             ColumnDataType.Json      => "JSONB",
-			ColumnDataType.Xml       => "XML",
+            ColumnDataType.Xml       => "XML",
 
             _ => throw new NotSupportedException($"PostgreSQL does not support {type}")
         };
@@ -650,8 +658,8 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         return type switch {
             ColumnDataType.Boolean   => NpgsqlDbType.Boolean,
             ColumnDataType.Int16     => NpgsqlDbType.Smallint,
-			ColumnDataType.Int       => NpgsqlDbType.Integer,
-			ColumnDataType.Int32     => NpgsqlDbType.Integer,
+            ColumnDataType.Int       => NpgsqlDbType.Integer,
+            ColumnDataType.Int32     => NpgsqlDbType.Integer,
             ColumnDataType.Int64     => NpgsqlDbType.Bigint,
             ColumnDataType.UInt16    => NpgsqlDbType.Smallint,
             ColumnDataType.UInt32    => NpgsqlDbType.Integer,
@@ -671,10 +679,10 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
             ColumnDataType.Binary    => NpgsqlDbType.Bytea,
             ColumnDataType.Guid      => NpgsqlDbType.Uuid,
             ColumnDataType.Json      => NpgsqlDbType.Jsonb,
-			ColumnDataType.Xml       => NpgsqlDbType.Xml,
+            ColumnDataType.Xml       => NpgsqlDbType.Xml,
 
             _ => null
         };
-	}
+    }
     #endregion
 }
