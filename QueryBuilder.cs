@@ -1,9 +1,7 @@
 ﻿using Npgsql;
-using Npgsql.Internal.Postgres;
 using System;
 using System.Data;
 using System.Data.Common;
-using System.Threading.Tasks;
 using Unleasharp.ExtensionMethods;
 
 namespace Unleasharp.DB.PostgreSQL;
@@ -19,24 +17,26 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
 
         try {
             using (NpgsqlCommand queryCommand = new NpgsqlCommand(this.DBQuery.QueryPreparedString, this.Connector.Connection)) {
-				this._PrepareDbCommand(queryCommand);
-				switch (this.DBQuery.QueryType) {
+                this._PrepareDbCommand(queryCommand);
+
+                switch (this.DBQuery.QueryType) {
                     case Base.QueryBuilding.QueryType.COUNT:
                         if (queryCommand.ExecuteScalar().TryConvert<int>(out int scalarCount)) {
                             this.TotalCount = scalarCount;
                         }
-                        return true;
+                        break;
                     case Base.QueryBuilding.QueryType.SELECT:
-						using (NpgsqlDataReader queryReader = queryCommand.ExecuteReader()) {
+                        using (NpgsqlDataReader queryReader = queryCommand.ExecuteReader()) {
                             this._HandleQueryResult(queryReader);
                         }
-                        return true;
+                        break;
                     case Base.QueryBuilding.QueryType.UPDATE:
                     default:
-						this.AffectedRows = queryCommand.ExecuteNonQuery();
-
-                        return true;
+                        this.AffectedRows = queryCommand.ExecuteNonQuery();
+                        break;
                 }
+
+                return true;
             }
         }
         catch (Exception ex) {
@@ -46,20 +46,38 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
         return false;
     }
 
+    protected override T _ExecuteScalar<T>() {
+        this.DBQuery.RenderPrepared();
+
+        try {
+            using (NpgsqlCommand queryCommand = new NpgsqlCommand(this.DBQuery.QueryPreparedString, this.Connector.Connection)) {
+                this._PrepareDbCommand(queryCommand);
+                if (queryCommand.ExecuteScalar().TryConvert<T>(out T scalarResult)) {
+                    return scalarResult;
+                }
+            }
+        }
+        catch (Exception ex) {
+            this._OnQueryException(ex);
+        }
+
+        return default(T);
+    }
+
     private void _PrepareDbCommand(NpgsqlCommand queryCommand) {
-		foreach (string queryPreparedDataKey in this.DBQuery.QueryPreparedData.Keys) {
+        foreach (string queryPreparedDataKey in this.DBQuery.QueryPreparedData.Keys) {
             object? value = this.DBQuery.QueryPreparedData[queryPreparedDataKey].Value;
 
-			if (value != null && value is NpgsqlParameter) {
-				queryCommand.Parameters.Add(value);
+            if (value != null && value is NpgsqlParameter) {
+                queryCommand.Parameters.Add(value);
                 continue;
-			}
-			queryCommand.Parameters.Add(new NpgsqlParameter(queryPreparedDataKey, value));
-		}
-		queryCommand.Prepare();
-	}
+            }
+            queryCommand.Parameters.Add(new NpgsqlParameter(queryPreparedDataKey, value));
+        }
+        queryCommand.Prepare();
+    }
 
-	private void _HandleQueryResult(NpgsqlDataReader queryReader) {
+    private void _HandleQueryResult(NpgsqlDataReader queryReader) {
         this.Result = new DataTable();
 
         for (int i = 0; i < queryReader.FieldCount; i++) {
