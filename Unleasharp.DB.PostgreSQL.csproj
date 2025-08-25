@@ -27,6 +27,4 @@
     <PackageReference Include="Npgsql" Version="9.0.3" />
     <PackageReference Include="Unleasharp.DB.Base" Version="1.3.2" />
   </ItemGroup>
-
-  </ItemGroup>
 </Project>
