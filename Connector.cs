@@ -16,9 +16,9 @@ public class Connector : Unleasharp.DB.Base.Connector<Connector, NpgsqlConnectio
     public Connector(NpgsqlConnection connection) {
         this.Connection = connection;
     }
-	#endregion
+    #endregion
 
-	#region Connection management
+    #region Connection management
     /// <inheritdoc />
     protected override bool _Connected() {
         switch (this.Connection.State) {

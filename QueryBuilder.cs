@@ -69,6 +69,9 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
             object? value = this.DBQuery.QueryPreparedData[queryPreparedDataKey].Value;
 
             if (value != null && value is NpgsqlParameter) {
+                NpgsqlParameter sqlParameter = (NpgsqlParameter)value;
+                sqlParameter.ParameterName = queryPreparedDataKey;
+
                 queryCommand.Parameters.Add(value);
                 continue;
             }

@@ -3,6 +3,7 @@ using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using Unleasharp.DB.Base;
@@ -22,6 +23,27 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
     public const string ValueDelimiter = "'";
 
     #region Public query building methods overrides
+    public override Query Set<T>(Expression<Func<T, object>> expression, dynamic value, bool escape = true) {
+        Type   tableType         = typeof(T);
+        string dbColumnName      = ExpressionHelper.ExtractColumnName<T>(expression);
+        string classPropertyName = ExpressionHelper.ExtractClassFieldName<T>(expression);
+        string tableName         = tableType.GetTableName();
+
+        MemberInfo member    = tableType.GetMember(classPropertyName).FirstOrDefault();
+
+        if (member == null) {
+            return this.Set(dbColumnName, value, escape);
+        }
+
+        NpgsqlParameter param = this.__GetMemberInfoNpgsqlParameter(value, member);
+
+        return this.Set(new Where<Query> {
+            Field       = new FieldSelector(dbColumnName),
+            Value       = param,
+            EscapeValue = true
+        });
+    }
+
     public override Query Value<T>(T row, bool skipNullValues = true) where T : class {
         Type rowType = row.GetType();
 
@@ -29,10 +51,10 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
             List<NpgsqlParameter> rowValues = new List<NpgsqlParameter>();
 
             foreach (FieldInfo field in rowType.GetFields()) {
-                rowValues.Add(this.__GetMemberInfoParameter(row, field));
+                rowValues.Add(this.__GetMemberInfoNpgsqlParameter(field.GetValue(row), field));
             }
             foreach (PropertyInfo property in rowType.GetProperties()) {
-                rowValues.Add(this.__GetMemberInfoParameter(row, property));
+                rowValues.Add(this.__GetMemberInfoNpgsqlParameter(property.GetValue(row), property));
             }
 
             return this.Value(
@@ -57,21 +79,14 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         return (Query) this;
     }
 
-    private NpgsqlParameter __GetMemberInfoParameter(object row, MemberInfo memberInfo) {
+    private NpgsqlParameter __GetMemberInfoNpgsqlParameter(object? value, MemberInfo memberInfo) {
         string          classFieldName   = memberInfo.Name;
         string          dbFieldName      = classFieldName;
         Type            memberInfoType   = memberInfo.GetDataType();
         Column?         column           = memberInfo.GetCustomAttribute<Column>();
-        object?         value            = null;
         ColumnDataType? columnDataType   = null;
         NpgsqlDbType?   dbColumnDataType = null;
 
-        if (memberInfo is FieldInfo) {
-            value = ((FieldInfo)memberInfo   ).GetValue(row);
-        }
-        if (memberInfo is PropertyInfo) {
-            value = ((PropertyInfo)memberInfo).GetValue(row);
-        }
         if (value == null) {
             value = DBNull.Value;
         }
@@ -89,10 +104,14 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         if (column != null) {
             dbFieldName = column.Name;
 
+            if (!string.IsNullOrEmpty(column.DataTypeString)) {
+                columnDataType = this.GetColumnDataType(column.DataTypeString);
+            }
             if (column.DataType != null) {
                 columnDataType = column.DataType;
             }
-            else {
+
+            if (columnDataType == null) {
                 columnDataType = memberInfoType.GetColumnType();
             }
 
@@ -104,6 +123,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
                 ParameterName = dbFieldName,
                 Value         = value,
                 NpgsqlDbType  = dbColumnDataType.Value,
+                SourceColumn  = dbFieldName,
             };
         }
 
@@ -623,7 +643,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         return value.ToString();
     }
 
-    public string GetColumnDataTypeString(ColumnDataType type) {
+    public string GetColumnDataTypeString(ColumnDataType? type) {
         return type switch {
             ColumnDataType.Boolean   => "BOOLEAN",
             ColumnDataType.Int16     => "SMALLINT",
