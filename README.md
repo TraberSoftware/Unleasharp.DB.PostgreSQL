@@ -23,7 +23,7 @@ dotnet add package Unleasharp.DB.PostgreSQL
 
 ### PackageReference (Manual)
 ```xml
-<PackageReference Include="Unleasharp.DB.PostgreSQL" Version="1.4.0" />
+<PackageReference Include="Unleasharp.DB.PostgreSQL" Version="1.4.1" />
 ```
 
 ## 🎯 Features

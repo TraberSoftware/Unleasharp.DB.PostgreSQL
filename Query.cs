@@ -70,7 +70,6 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         return this.Value(row.ToDynamicDictionary());
     }
 
-
     public virtual Query Values<T>(List<T> rows, bool skipNullValues = true) where T : class {
         foreach (T row in rows) {
             this.Value<T>(row, skipNullValues);
@@ -506,7 +505,6 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         return (rendered.Count > 0 ? "VALUES " + string.Join(',', rendered) : "");
     }
 
-
     protected override string _RenderCreateSentence<T>() {
         return this._RenderCreateSentence(typeof(T));
     }
@@ -561,7 +559,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         foreach (UniqueKey uKey in tableType.GetCustomAttributes<UniqueKey>()) {
             definitions.Add(
                 $"CONSTRAINT {Query.FieldDelimiter}uk_{uKey.Name}{Query.FieldDelimiter} UNIQUE " +
-                $"({string.Join(", ", uKey.Columns.Select(column => $"{Query.FieldDelimiter}{column}{Query.FieldDelimiter}"))})"
+                $"({string.Join(", ", uKey.Columns.Select(column => $"{Query.FieldDelimiter}{this._GetKeyColumnName(tableType, column)}{Query.FieldDelimiter}"))})"
             );
         }
         foreach (ForeignKey fKey in tableType.GetCustomAttributes<ForeignKey>()) {
