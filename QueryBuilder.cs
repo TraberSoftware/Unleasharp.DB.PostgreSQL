@@ -2,7 +2,6 @@
 using NpgsqlTypes;
 using System;
 using System.Data;
-using System.Data.Common;
 using Unleasharp.DB.Base.ExtensionMethods;
 using Unleasharp.ExtensionMethods;
 
@@ -30,6 +29,15 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
                     case Base.QueryBuilding.QueryType.SELECT:
                         using (NpgsqlDataReader queryReader = queryCommand.ExecuteReader()) {
                             this._HandleQueryResult(queryReader);
+                        }
+                        break;
+                    case Base.QueryBuilding.QueryType.INSERT:
+                        if (this.DBQuery.QueryValues.Count == 1) {
+                            this.LastInsertedId = queryCommand.ExecuteScalar();
+                            this.AffectedRows = this.LastInsertedId != null ? 1 : 0;
+                        }
+                        else {
+                            this.AffectedRows = queryCommand.ExecuteNonQuery();
                         }
                         break;
                     case Base.QueryBuilding.QueryType.UPDATE:

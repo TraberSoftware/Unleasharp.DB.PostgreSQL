@@ -22,7 +22,35 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
     public const string FieldDelimiter = "\"";
     public const string ValueDelimiter = "'";
 
+    public string QueryReturning { get; protected set; }
+
     #region Public query building methods overrides
+    public override Query Into<TableClass>() {
+        foreach (MemberInfo member in typeof(TableClass).GetMembers()) {
+            Column column = member.GetCustomAttribute<Column>();
+            if (column != null) {
+                if (column.PrimaryKey) {
+                    this.QueryReturning = column.Name;
+                }
+            }
+        }
+
+        return base.Into<TableClass>();
+    }
+
+    public override Query From<TableClass>() {
+        foreach (MemberInfo member in typeof(TableClass).GetMembers()) {
+            Column column = member.GetCustomAttribute<Column>();
+            if (column != null) {
+                if (column.PrimaryKey) {
+                    this.QueryReturning = column.Name;
+                }
+            }
+        }
+
+        return base.From<TableClass>();
+    }
+
     public override Query Set<T>(Expression<Func<T, object>> expression, dynamic value, bool escape = true) {
         Type   tableType         = typeof(T);
         string dbColumnName      = ExpressionHelper.ExtractColumnName<T>(expression);
@@ -502,7 +530,12 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
             }
         }
 
-        return (rendered.Count > 0 ? "VALUES " + string.Join(',', rendered) : "");
+        return (rendered.Count > 0 ? 
+            $"VALUES {string.Join(',', rendered)}" + 
+            ((!string.IsNullOrWhiteSpace(QueryReturning) ? $" RETURNING {QueryReturning}" : "")) 
+            :
+            ""
+        );
     }
 
     protected override string _RenderCreateSentence<T>() {
@@ -559,7 +592,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         foreach (UniqueKey uKey in tableType.GetCustomAttributes<UniqueKey>()) {
             definitions.Add(
                 $"CONSTRAINT {Query.FieldDelimiter}uk_{uKey.Name}{Query.FieldDelimiter} UNIQUE " +
-                $"({string.Join(", ", uKey.Columns.Select(column => $"{Query.FieldDelimiter}{this._GetKeyColumnName(tableType, column)}{Query.FieldDelimiter}"))})"
+                $"({string.Join(", ", uKey.Columns.Select(column => $"{Query.FieldDelimiter}{tableType.GetColumnName(column)}{Query.FieldDelimiter}"))})"
             );
         }
         foreach (ForeignKey fKey in tableType.GetCustomAttributes<ForeignKey>()) {
