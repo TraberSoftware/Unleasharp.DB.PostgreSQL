@@ -16,6 +16,8 @@ using Unleasharp.ExtensionMethods;
 namespace Unleasharp.DB.PostgreSQL;
 
 public class Query : Unleasharp.DB.Base.Query<Query> {
+    protected override DatabaseEngine _Engine { get { return DatabaseEngine.PostgreSQL; } }
+
     #region Custom PostgreSQL query data
     #endregion
 
