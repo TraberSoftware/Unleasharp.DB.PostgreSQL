@@ -7,12 +7,21 @@ using Unleasharp.ExtensionMethods;
 
 namespace Unleasharp.DB.PostgreSQL;
 
+/// <summary>
+/// Provides functionality for building and executing database queries using a PostgreSQL connection.
+/// </summary>
+/// <remarks>This class extends the base query builder functionality to support PostgreSQL-specific query execution. It
+/// allows for the construction, execution, and management of queries, including support for synchronous and
+/// asynchronous operations. The class handles query preparation, parameter binding, and result processing.</remarks>
 public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, NpgsqlConnection, NpgsqlConnectionStringBuilder> {
+    /// <inheritdoc />
     public QueryBuilder(Connector dbConnector) : base(dbConnector) { }
 
+    /// <inheritdoc />
     public QueryBuilder(Connector dbConnector, Query query) : base(dbConnector, query) { }
 
     #region Query execution
+    /// <inheritdoc />
     protected override bool _Execute() {
         this.DBQuery.RenderPrepared();
 
@@ -34,7 +43,7 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
                     case Base.QueryBuilding.QueryType.INSERT:
                         if (this.DBQuery.QueryValues.Count == 1) {
                             this.LastInsertedId = queryCommand.ExecuteScalar();
-                            this.AffectedRows = this.LastInsertedId != null ? 1 : 0;
+                            this.AffectedRows   = this.LastInsertedId != null ? 1 : 0;
                         }
                         else {
                             this.AffectedRows = queryCommand.ExecuteNonQuery();
@@ -56,6 +65,7 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
         return false;
     }
 
+    /// <inheritdoc />
     protected override T _ExecuteScalar<T>() {
         this.DBQuery.RenderPrepared();
 
@@ -74,6 +84,14 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
         return default(T);
     }
 
+    /// <summary>
+    /// Prepares the specified <see cref="NpgsqlCommand"/> by adding parameters based on the query's prepared data.
+    /// </summary>
+    /// <remarks>If a value in the prepared data is an <see cref="Enum"/>, its description (retrieved via a
+    /// custom extension method) is used as the parameter value. Otherwise, the value itself is used. After all
+    /// parameters are added, the command is prepared by calling <see cref="NpgsqlCommand.Prepare"/>.</remarks>
+    /// <param name="queryCommand">The <see cref="NpgsqlCommand"/> to be prepared. This command will have its parameters populated using the keys
+    /// and values from the query's prepared data.</param>
     private void _PrepareDbCommand(NpgsqlCommand queryCommand) {
         foreach (string queryPreparedDataKey in this.DBQuery.QueryPreparedData.Keys) {
             object? value = this.DBQuery.QueryPreparedData[queryPreparedDataKey].Value;
@@ -102,6 +120,15 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
         queryCommand.Prepare();
     }
 
+    /// <summary>
+    /// Processes the result of a SQL query and populates a <see cref="DataTable"/> with the retrieved data.
+    /// </summary>
+    /// <remarks>This method creates a new <see cref="DataTable"/> and populates it with the data from the
+    /// provided  <see cref="NpgsqlDataReader"/>. Column names in the resulting <see cref="DataTable"/> are made unique 
+    /// by appending a suffix if necessary. If the query result includes base table and column information,  column
+    /// names are prefixed with the base table name in the format "BaseTable::BaseColumn".</remarks>
+    /// <param name="queryReader">A <see cref="NpgsqlDataReader"/> instance containing the query result to process.  The reader must be positioned
+    /// at the start of the result set.</param>
     private void _HandleQueryResult(NpgsqlDataReader queryReader) {
         this.Result = new DataTable();
 
