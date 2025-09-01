@@ -102,10 +102,16 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
             List<NpgsqlParameter> rowValues = new List<NpgsqlParameter>();
 
             foreach (FieldInfo field in rowType.GetFields()) {
-                rowValues.Add(this.__GetMemberInfoNpgsqlParameter(field.GetValue(row), field));
+                NpgsqlParameter parameter = this.__GetMemberInfoNpgsqlParameter(field.GetValue(row), field);
+                if (parameter != null) {
+                    rowValues.Add(parameter);
+                }
             }
             foreach (PropertyInfo property in rowType.GetProperties()) {
-                rowValues.Add(this.__GetMemberInfoNpgsqlParameter(property.GetValue(row), property));
+                NpgsqlParameter parameter = this.__GetMemberInfoNpgsqlParameter(property.GetValue(row), property);
+                if (parameter != null) {
+                    rowValues.Add(parameter);
+                }
             }
 
             return this.Value(
@@ -152,6 +158,10 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         Column?         column           = memberInfo.GetCustomAttribute<Column>();
         ColumnDataType? columnDataType   = null;
         NpgsqlDbType?   dbColumnDataType = null;
+
+        if (memberInfo.IsSystemColumn()) {
+            return null;
+        }
 
         if (value == null) {
             value = DBNull.Value;
