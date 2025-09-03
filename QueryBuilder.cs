@@ -36,6 +36,7 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
                         }
                         break;
                     case Base.QueryBuilding.QueryType.SELECT:
+                    case Base.QueryBuilding.QueryType.SELECT_UNION:
                         using (NpgsqlDataReader queryReader = queryCommand.ExecuteReader()) {
                             this._HandleQueryResult(queryReader);
                         }
