@@ -23,9 +23,6 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
     /// <inheritdoc/>
     protected override DatabaseEngine _Engine { get { return DatabaseEngine.PostgreSQL; } }
 
-    #region Custom PostgreSQL query data
-    #endregion
-
     /// <summary>
     /// The delimiter used for escaping field names in PostgreSQL.
     /// </summary>
@@ -35,6 +32,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
     /// </summary>
     public const string ValueDelimiter = "'";
 
+    #region Custom PostgreSQL query data
     /// <summary>
     /// Specifies which column value should be returned from PostgreSQL when performing an INSERT statement with a RETURNING clause.
     /// For example, in "INSERT INTO ... RETURNING id;", this field indicates which column (e.g., "id") to return from the inserted rows.
@@ -42,6 +40,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
     public string QueryReturning {
         get; protected set;
     }
+    #endregion
 
     #region Public query building methods overrides
     /// <inheritdoc/>
