@@ -459,10 +459,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
             }
         }
         else {
-            // If this is a UNION query, avoid adding * to the select
-            if (this.QueryType != QueryType.SELECT_UNION) {
-                rendered.Add("*");
-            }
+            rendered.Add("*");
         }
 
         return rendered.Count > 0 ? $"SELECT {(this.QueryDistinct ? "DISTINCT " : "")}{string.Join(',', rendered)}" : "";
@@ -889,30 +886,33 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
     /// <exception cref="NotSupportedException">Thrown if the specified <paramref name="type"/> is not supported by PostgreSQL or is <c>null</c>.</exception>
     public string GetColumnDataTypeString(ColumnDataType? type) {
         return type switch {
-            ColumnDataType.Boolean   => "BOOLEAN",
-            ColumnDataType.Int16     => "SMALLINT",
-            ColumnDataType.Int       => "INTEGER",
-            ColumnDataType.Int32     => "INTEGER",
-            ColumnDataType.Int64     => "BIGINT",
-            ColumnDataType.UInt16    => "SMALLINT",
-            ColumnDataType.UInt32    => "INTEGER",
-            ColumnDataType.UInt      => "INTEGER",
-            ColumnDataType.UInt64    => "BIGINT",
-            ColumnDataType.Decimal   => "NUMERIC",
-            ColumnDataType.Float     => "REAL",
-            ColumnDataType.Double    => "DOUBLE PRECISION",
-            ColumnDataType.Text      => "TEXT",
-            ColumnDataType.Char      => "CHAR",
-            ColumnDataType.Varchar   => "VARCHAR",
-            ColumnDataType.Enum      => "VARCHAR",
-            ColumnDataType.Date      => "DATE",
-            ColumnDataType.DateTime  => "TIMESTAMP",
-            ColumnDataType.Time      => "TIME",
-            ColumnDataType.Timestamp => "TIMESTAMPTZ",
-            ColumnDataType.Binary    => "BYTEA",
-            ColumnDataType.Guid      => "UUID",
-            ColumnDataType.Json      => "JSONB",
-            ColumnDataType.Xml       => "XML",
+            ColumnDataType.Boolean    => "BOOLEAN",
+            ColumnDataType.Int16      => "SMALLINT",
+            ColumnDataType.Int        => "INTEGER",
+            ColumnDataType.Int32      => "INTEGER",
+            ColumnDataType.Int64      => "BIGINT",
+            ColumnDataType.UInt16     => "SMALLINT",
+            ColumnDataType.UInt32     => "INTEGER",
+            ColumnDataType.UInt       => "INTEGER",
+            ColumnDataType.UInt64     => "BIGINT",
+            ColumnDataType.Decimal    => "NUMERIC",
+            ColumnDataType.Float      => "REAL",
+            ColumnDataType.Double     => "DOUBLE PRECISION",
+            ColumnDataType.TinyText   => "TEXT",
+            ColumnDataType.Text       => "TEXT",
+            ColumnDataType.MediumText => "TEXT",
+            ColumnDataType.LongText   => "TEXT",
+            ColumnDataType.Char       => "CHAR",
+            ColumnDataType.Varchar    => "VARCHAR",
+            ColumnDataType.Enum       => "VARCHAR",
+            ColumnDataType.Date       => "DATE",
+            ColumnDataType.DateTime   => "TIMESTAMP",
+            ColumnDataType.Time       => "TIME",
+            ColumnDataType.Timestamp  => "TIMESTAMPTZ",
+            ColumnDataType.Binary     => "BYTEA",
+            ColumnDataType.Guid       => "UUID",
+            ColumnDataType.Json       => "JSONB",
+            ColumnDataType.Xml        => "XML",
 
             _ => throw new NotSupportedException($"PostgreSQL does not support {type}")
         };
@@ -929,30 +929,33 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
     /// if the mapping is not defined.</returns>
     public NpgsqlDbType? GetPostgreSQLDataType(ColumnDataType type) {
         return type switch {
-            ColumnDataType.Boolean   => NpgsqlDbType.Boolean,
-            ColumnDataType.Int16     => NpgsqlDbType.Smallint,
-            ColumnDataType.Int       => NpgsqlDbType.Integer,
-            ColumnDataType.Int32     => NpgsqlDbType.Integer,
-            ColumnDataType.Int64     => NpgsqlDbType.Bigint,
-            ColumnDataType.UInt16    => NpgsqlDbType.Smallint,
-            ColumnDataType.UInt32    => NpgsqlDbType.Integer,
-            ColumnDataType.UInt      => NpgsqlDbType.Integer,
-            ColumnDataType.UInt64    => NpgsqlDbType.Bigint,
-            ColumnDataType.Decimal   => NpgsqlDbType.Numeric,
-            ColumnDataType.Float     => NpgsqlDbType.Real,
-            ColumnDataType.Double    => NpgsqlDbType.Double,
-            ColumnDataType.Text      => NpgsqlDbType.Text,
-            ColumnDataType.Char      => NpgsqlDbType.Char,
-            ColumnDataType.Varchar   => NpgsqlDbType.Varchar,
-            ColumnDataType.Enum      => NpgsqlDbType.Integer,
-            ColumnDataType.Date      => NpgsqlDbType.Date,
-            ColumnDataType.DateTime  => NpgsqlDbType.Timestamp,
-            ColumnDataType.Time      => NpgsqlDbType.Time,
-            ColumnDataType.Timestamp => NpgsqlDbType.TimestampTz,
-            ColumnDataType.Binary    => NpgsqlDbType.Bytea,
-            ColumnDataType.Guid      => NpgsqlDbType.Uuid,
-            ColumnDataType.Json      => NpgsqlDbType.Jsonb,
-            ColumnDataType.Xml       => NpgsqlDbType.Xml,
+            ColumnDataType.Boolean    => NpgsqlDbType.Boolean,
+            ColumnDataType.Int16      => NpgsqlDbType.Smallint,
+            ColumnDataType.Int        => NpgsqlDbType.Integer,
+            ColumnDataType.Int32      => NpgsqlDbType.Integer,
+            ColumnDataType.Int64      => NpgsqlDbType.Bigint,
+            ColumnDataType.UInt16     => NpgsqlDbType.Smallint,
+            ColumnDataType.UInt32     => NpgsqlDbType.Integer,
+            ColumnDataType.UInt       => NpgsqlDbType.Integer,
+            ColumnDataType.UInt64     => NpgsqlDbType.Bigint,
+            ColumnDataType.Decimal    => NpgsqlDbType.Numeric,
+            ColumnDataType.Float      => NpgsqlDbType.Real,
+            ColumnDataType.Double     => NpgsqlDbType.Double,
+            ColumnDataType.TinyText   => NpgsqlDbType.Text,
+            ColumnDataType.Text       => NpgsqlDbType.Text,
+            ColumnDataType.MediumText => NpgsqlDbType.Text,
+            ColumnDataType.LongText   => NpgsqlDbType.Text,
+            ColumnDataType.Char       => NpgsqlDbType.Char,
+            ColumnDataType.Varchar    => NpgsqlDbType.Varchar,
+            ColumnDataType.Enum       => NpgsqlDbType.Integer,
+            ColumnDataType.Date       => NpgsqlDbType.Date,
+            ColumnDataType.DateTime   => NpgsqlDbType.Timestamp,
+            ColumnDataType.Time       => NpgsqlDbType.Time,
+            ColumnDataType.Timestamp  => NpgsqlDbType.TimestampTz,
+            ColumnDataType.Binary     => NpgsqlDbType.Bytea,
+            ColumnDataType.Guid       => NpgsqlDbType.Uuid,
+            ColumnDataType.Json       => NpgsqlDbType.Jsonb,
+            ColumnDataType.Xml        => NpgsqlDbType.Xml,
 
             _ => null
         };
