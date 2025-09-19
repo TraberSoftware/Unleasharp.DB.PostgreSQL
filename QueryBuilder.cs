@@ -110,7 +110,7 @@ public class QueryBuilder : Base.QueryBuilder<QueryBuilder, Connector, Query, Np
                 NpgsqlParameter sqlParameter = (NpgsqlParameter)value;
                 sqlParameter.ParameterName = queryPreparedDataKey;
 
-                queryCommand.Parameters.Add(value);
+                queryCommand.Parameters.Add(sqlParameter);
                 continue;
             }
             else {
