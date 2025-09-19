@@ -167,6 +167,22 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         if (value == null) {
             value = DBNull.Value;
         }
+        else {
+            if (value.IsWholeNumber() && column != null) {
+                value = column.DataType switch {
+                    ColumnDataType.Int16  => Convert.ToInt16(value),
+                    ColumnDataType.UInt16 => Convert.ToUInt16(value),
+                    ColumnDataType.Int    => Convert.ToInt32(value),
+                    ColumnDataType.Int32  => Convert.ToInt32(value),
+                    ColumnDataType.UInt32 => Convert.ToUInt32(value),
+                    ColumnDataType.Int64  => Convert.ToInt64(value),
+                    ColumnDataType.UInt64 => Convert.ToUInt64(value),
+
+                    // Leave value untouched if DataType not set or not matching a whole number type
+                    _ => value
+                };
+            }
+        }
 
         // Don't set null values to Primary Key columns
         // HOWEVER, be careful when mixing null and not-null values of Primary Key columns in the same insert
@@ -676,12 +692,13 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
 
     /// <inheritdoc/>
     protected override string _RenderInsertOnConflictSentence() {
+        string returning = (!string.IsNullOrWhiteSpace(QueryReturning) ? $" RETURNING {QueryReturning}" : "");
         if (this.QueryOnConflict == OnInsertConflict.NONE) {
-            return string.Empty;
+            return returning;
         }
 
         if (this.QueryOnConflict == OnInsertConflict.IGNORE) {
-            return $"ON CONFLICT ({Query.FieldDelimiter}{this.QueryOnConflictKeyColumn}{Query.FieldDelimiter}) DO NOTHING";
+            return $"ON CONFLICT ({Query.FieldDelimiter}{this.QueryOnConflictKeyColumn}{Query.FieldDelimiter}) DO NOTHING" + returning;
         }
         
         List<string> rendered = new List<string>();
@@ -692,9 +709,7 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
             }
         }
 
-        return (rendered.Count > 0 ? $"ON CONFLICT ({this.QueryOnConflictKeyColumn}) DO UPDATE SET " + string.Join(',', rendered) : "") +
-            ((!string.IsNullOrWhiteSpace(QueryReturning) ? $" RETURNING {QueryReturning}" : ""))
-        ;
+        return (rendered.Count > 0 ? $"ON CONFLICT ({this.QueryOnConflictKeyColumn}) DO UPDATE SET " + string.Join(',', rendered) : "") + returning;
     }
 
     /// <inheritdoc/>
@@ -825,8 +840,17 @@ public class Query : Unleasharp.DB.Base.Query<Query> {
         }
 
         StringBuilder columnBuilder = new StringBuilder($"{Query.FieldDelimiter}{tableColumn.Name}{Query.FieldDelimiter} {columnDataTypeString}");
-        if (tableColumn.Length > 0)
-            columnBuilder.Append($" ({tableColumn.Length}{(tableColumn.Precision > 0 ? $",{tableColumn.Precision}" : "")})");
+        if (tableColumn.Length > 0) {
+            string lengthToAppend = tableColumn.DataType switch {
+                ColumnDataType.Binary => null,
+                ColumnDataType.Enum   => null,
+
+                _ => $" ({tableColumn.Length}{(tableColumn.Precision > 0 ? $",{tableColumn.Precision}" : "")})"
+            };
+            if (lengthToAppend != null) {
+                columnBuilder.Append(lengthToAppend);
+            }
+        }
 
         if (tableColumn.Unique)
             columnBuilder.Append(" UNIQUE");
